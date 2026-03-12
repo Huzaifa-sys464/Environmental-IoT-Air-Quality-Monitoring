@@ -19,7 +19,7 @@ When values exceed predefined thresholds, the system triggers alerts.
 
 View the system diagram here:
 
-[System Architecture Diagram](system_diagram.html)
+[System Architecture Diagram](system_diagram.html)   (Download the raw code in the computer and then open it)
 
 ## Hardware Used
 
