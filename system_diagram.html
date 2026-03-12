@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gas Pollution Monitor - System Diagram</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --panel: #0d1424;
+    --border: #1a2a4a;
+    --accent: #00d4ff;
+    --accent2: #00ff88;
+    --accent3: #ff6b35;
+    --warn: #ffaa00;
+    --text: #c8d8f0;
+    --dim: #4a6080;
+    --relay-color: #ff4466;
+    --sensor-color: #aa66ff;
+    --display-color: #00aaff;
+    --esp-color: #00ff88;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(0,255,136,0.04) 0%, transparent 50%);
+  }
+
+  /* Grid overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .header .tag {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  .header h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(18px, 4vw, 32px);
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 2px;
+    text-shadow: 0 0 30px rgba(0,212,255,0.4);
+  }
+
+  .header h1 span { color: var(--accent2); }
+
+  .header .sub {
+    font-size: 12px;
+    color: var(--dim);
+    margin-top: 6px;
+    letter-spacing: 2px;
+  }
+
+  /* Diagram container */
+  .diagram {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 40px 30px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .diagram::before {
+    content: 'SYSTEM DIAGRAM v1.0';
+    position: absolute;
+    top: 12px; right: 16px;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+  }
+
+  /* SVG diagram */
+  .svg-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  svg {
+    width: 100%;
+    min-width: 700px;
+    height: auto;
+    display: block;
+  }
+
+  /* Specs table */
+  .specs {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .spec-card {
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    border-radius: 2px;
+    position: relative;
+    background: rgba(255,255,255,0.01);
+    transition: border-color 0.3s;
+  }
+
+  .spec-card:hover { border-color: var(--accent); }
+
+  .spec-card .label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .spec-card .value {
+    font-size: 13px;
+    color: var(--accent);
+  }
+
+  .spec-card .dot {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    box-shadow: 0 0 6px var(--accent2);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Flow logic section */
+  .logic {
+    margin-top: 24px;
+    border: 1px solid var(--border);
+    padding: 20px;
+    border-radius: 2px;
+  }
+
+  .logic-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  .flow-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .step {
+    background: rgba(0,212,255,0.06);
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 8px 14px;
+    font-size: 11px;
+    color: var(--text);
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .step.warn { 
+    border-color: rgba(255,170,0,0.4); 
+    background: rgba(255,170,0,0.06);
+    color: var(--warn);
+  }
+
+  .step.danger { 
+    border-color: rgba(255,68,102,0.4); 
+    background: rgba(255,68,102,0.06);
+    color: var(--relay-color);
+  }
+
+  .arrow {
+    color: var(--dim);
+    font-size: 14px;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 1px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .badge {
+    background: rgba(0,255,136,0.08);
+    border: 1px solid rgba(0,255,136,0.2);
+    color: var(--accent2);
+    padding: 4px 10px;
+    border-radius: 2px;
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="header">
+    <div class="tag">⬡ IoT Project Documentation</div>
+    <h1>GAS POLLUTION <span>MONITOR</span></h1>
+    <div class="sub">ESP32 · MQ2 · SSD1306 · RELAY MODULE · WOKWI SIMULATION</div>
+  </div>
+
+  <div class="diagram">
+    <div class="svg-wrap">
+      <svg viewBox="0 0 800 420" xmlns="http://www.w3.org/2000/svg" font-family="'Share Tech Mono', monospace">
+        <defs>
+          <!-- Glow filters -->
+          <filter id="glow-cyan">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-green">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+
+          <!-- Arrow marker -->
+          <marker id="arrow-cyan" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#00d4ff" opacity="0.8"/>
+          </marker>
+          <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#00ff88" opacity="0.8"/>
+          </marker>
+          <marker id="arrow-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#aa66ff" opacity="0.8"/>
+          </marker>
+          <marker id="arrow-orange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#ff6b35" opacity="0.8"/>
+          </marker>
+          <marker id="arrow-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#ff4466" opacity="0.8"/>
+          </marker>
+
+          <!-- Animated dash -->
+          <style>
+            .data-flow { stroke-dasharray: 6 4; animation: dash 1.5s linear infinite; }
+            .data-flow-slow { stroke-dasharray: 6 4; animation: dash 3s linear infinite; }
+            @keyframes dash { to { stroke-dashoffset: -20; } }
+          </style>
+        </defs>
+
+        <!-- Background panels -->
+        <rect x="10" y="10" width="780" height="400" rx="3" fill="#0d1424" stroke="#1a2a4a" stroke-width="1"/>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- POWER SUPPLY (left) -->
+        <!-- ══════════════════════════════════════════ -->
+        <g id="power">
+          <rect x="28" y="160" width="90" height="70" rx="3" fill="#0a1020" stroke="#2a3a5a" stroke-width="1.5"/>
+          <rect x="28" y="160" width="90" height="18" rx="2" fill="#1a2a3a"/>
+          <text x="73" y="173" text-anchor="middle" fill="#4a6080" font-size="8" letter-spacing="1">POWER</text>
+          <text x="73" y="195" text-anchor="middle" fill="#ffaa00" font-size="11" font-weight="bold">USB</text>
+          <text x="73" y="210" text-anchor="middle" fill="#4a6080" font-size="8">5V DC</text>
+          <text x="73" y="222" text-anchor="middle" fill="#4a6080" font-size="8">via ESP32</text>
+          <!-- USB icon -->
+          <rect x="60" y="226" width="26" height="6" rx="1" fill="none" stroke="#ffaa00" stroke-width="1.2" opacity="0.5"/>
+        </g>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- ESP32 (center) -->
+        <!-- ══════════════════════════════════════════ -->
+        <g id="esp32">
+          <rect x="310" y="130" width="160" height="160" rx="4" fill="#0a1020" stroke="#00ff88" stroke-width="2" filter="url(#glow-green)"/>
+          <rect x="310" y="130" width="160" height="24" rx="3" fill="#0d2010"/>
+          <text x="390" y="147" text-anchor="middle" fill="#00ff88" font-size="10" letter-spacing="2" font-weight="bold">ESP32</text>
+
+          <!-- Pin labels -->
+          <text x="322" y="175" fill="#4a6080" font-size="7.5">GPIO34 (ADC)</text>
+          <text x="322" y="191" fill="#4a6080" font-size="7.5">GPIO26 (OUT)</text>
+          <text x="322" y="207" fill="#4a6080" font-size="7.5">GPIO21 (SDA)</text>
+          <text x="322" y="223" fill="#4a6080" font-size="7.5">GPIO22 (SCL)</text>
+          <text x="322" y="239" fill="#4a6080" font-size="7.5">3.3V / GND</text>
+          <text x="322" y="255" fill="#4a6080" font-size="7.5">Serial 115200</text>
+          <text x="322" y="271" fill="#4a6080" font-size="7.5">Threshold: 70%</text>
+
+          <!-- Chip graphic -->
+          <rect x="355" y="258" width="60" height="24" rx="2" fill="#0d2010" stroke="#00ff88" stroke-width="0.8" opacity="0.5"/>
+          <text x="385" y="274" text-anchor="middle" fill="#00ff88" font-size="7" opacity="0.6">XTENSA LX6</text>
+
+          <!-- Pin dots on right edge -->
+          <circle cx="470" cy="172" r="3" fill="#aa66ff"/>
+          <circle cx="470" cy="188" r="3" fill="#ff4466"/>
+          <circle cx="470" cy="204" r="3" fill="#00aaff"/>
+          <circle cx="470" cy="220" r="3" fill="#00aaff"/>
+
+          <!-- Pin dots on left edge -->
+          <circle cx="310" cy="172" r="3" fill="#aa66ff"/>
+          <circle cx="310" cy="188" r="3" fill="#ff4466"/>
+          <circle cx="310" cy="204" r="3" fill="#00aaff"/>
+          <circle cx="310" cy="220" r="3" fill="#00aaff"/>
+        </g>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- MQ2 SENSOR (left) -->
+        <!-- ══════════════════════════════════════════ -->
+        <g id="mq2">
+          <rect x="28" y="60" width="110" height="80" rx="3" fill="#0a1020" stroke="#aa66ff" stroke-width="1.8"/>
+          <rect x="28" y="60" width="110" height="18" rx="2" fill="#1a0a2a"/>
+          <text x="83" y="73" text-anchor="middle" fill="#aa66ff" font-size="8" letter-spacing="1">GAS SENSOR</text>
+          <text x="83" y="95" text-anchor="middle" fill="#c8d8f0" font-size="13" font-weight="bold">MQ-2</text>
+          <text x="83" y="112" text-anchor="middle" fill="#4a6080" font-size="8">Analog Output</text>
+          <text x="83" y="125" text-anchor="middle" fill="#4a6080" font-size="8">0 - 4095 ADC</text>
+          <text x="83" y="136" text-anchor="middle" fill="#aa66ff" font-size="7.5">LPG · CO · Smoke</text>
+          <!-- sensor circle -->
+          <circle cx="83" cy="108" r="5" fill="none" stroke="#aa66ff" stroke-width="1" opacity="0.3"/>
+        </g>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- OLED DISPLAY (top right) -->
+        <!-- ══════════════════════════════════════════ -->
+        <g id="oled">
+          <rect x="580" y="60" width="170" height="100" rx="3" fill="#0a1020" stroke="#00aaff" stroke-width="1.8"/>
+          <rect x="580" y="60" width="170" height="18" rx="2" fill="#0a1020"/>
+          <text x="665" y="73" text-anchor="middle" fill="#00aaff" font-size="8" letter-spacing="1">OLED DISPLAY</text>
+          <!-- mini screen -->
+          <rect x="600" y="82" width="130" height="60" rx="2" fill="#000814" stroke="#00aaff" stroke-width="1" opacity="0.7"/>
+          <text x="665" y="101" text-anchor="middle" fill="#00aaff" font-size="8.5">Pollution Monitor</text>
+          <line x1="605" y1="107" x2="725" y2="107" stroke="#1a2a3a" stroke-width="1"/>
+          <text x="665" y="120" text-anchor="middle" fill="#00ff88" font-size="9">Gas: 37 ppm</text>
+          <text x="665" y="133" text-anchor="middle" fill="#ffaa00" font-size="8">Status: SAFE</text>
+          <text x="615" y="73" text-anchor="middle" fill="#4a6080" font-size="7">SSD1306</text>
+          <text x="720" y="73" text-anchor="middle" fill="#4a6080" font-size="7">I2C 0x3C</text>
+        </g>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- RELAY MODULE (bottom right) -->
+        <!-- ══════════════════════════════════════════ -->
+        <g id="relay">
+          <rect x="580" y="240" width="170" height="90" rx="3" fill="#0a1020" stroke="#ff4466" stroke-width="1.8"/>
+          <rect x="580" y="240" width="170" height="18" rx="2" fill="#200a10"/>
+          <text x="665" y="253" text-anchor="middle" fill="#ff4466" font-size="8" letter-spacing="1">RELAY MODULE</text>
+          <text x="630" y="278" text-anchor="middle" fill="#c8d8f0" font-size="10">5V Relay</text>
+          <text x="630" y="294" text-anchor="middle" fill="#4a6080" font-size="7.5">IN ← GPIO26</text>
+          <text x="630" y="308" text-anchor="middle" fill="#4a6080" font-size="7.5">NC / NO / COM</text>
+          <!-- relay symbol -->
+          <rect x="698" y="262" width="36" height="22" rx="2" fill="none" stroke="#ff4466" stroke-width="1.2" opacity="0.6"/>
+          <line x1="707" y1="273" x2="726" y2="273" stroke="#ff4466" stroke-width="1.5" opacity="0.6"/>
+          <circle cx="727" cy="270" r="3" fill="none" stroke="#ff4466" stroke-width="1" opacity="0.6"/>
+          <!-- load label -->
+          <text x="665" y="323" text-anchor="middle" fill="#ff6b35" font-size="7.5">→ External Load / Alarm</text>
+        </g>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- SERIAL MONITOR (bottom center) -->
+        <!-- ══════════════════════════════════════════ -->
+        <g id="serial">
+          <rect x="290" y="325" width="190" height="70" rx="3" fill="#0a1020" stroke="#2a3a5a" stroke-width="1.2"/>
+          <rect x="290" y="325" width="190" height="16" rx="2" fill="#0d1a1a"/>
+          <text x="385" y="337" text-anchor="middle" fill="#4a8080" font-size="7.5" letter-spacing="1.5">SERIAL MONITOR · 115200</text>
+          <text x="300" y="354" fill="#00ff88" font-size="7.5">Raw ADC: 1545 → 37%</text>
+          <text x="300" y="366" fill="#00ff88" font-size="7.5">Relay: OFF</text>
+          <text x="300" y="378" fill="#ff4466" font-size="7.5">Raw ADC: 3999 → 97%  Relay: ON</text>
+          <rect x="442" y="346" width="30" height="30" rx="2" fill="#061010" stroke="#1a3030" stroke-width="1"/>
+          <text x="457" y="362" text-anchor="middle" fill="#00ff88" font-size="7">USB</text>
+          <text x="457" y="372" text-anchor="middle" fill="#4a6080" font-size="7">LOG</text>
+        </g>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- CONNECTION LINES -->
+        <!-- ══════════════════════════════════════════ -->
+
+        <!-- MQ2 → ESP32 (AO → GPIO34) -->
+        <path d="M138,100 L200,100 L200,172 L310,172" 
+          fill="none" stroke="#aa66ff" stroke-width="1.8" 
+          class="data-flow" marker-end="url(#arrow-purple)" opacity="0.85"/>
+        <text x="175" y="96" text-anchor="middle" fill="#aa66ff" font-size="8">AO</text>
+
+        <!-- ESP32 → Relay (GPIO26 → IN) -->
+        <path d="M470,188 L540,188 L540,285 L580,285" 
+          fill="none" stroke="#ff4466" stroke-width="1.8" 
+          class="data-flow" marker-end="url(#arrow-red)" opacity="0.85"/>
+        <text x="505" y="183" fill="#ff4466" font-size="8">GPIO26</text>
+
+        <!-- ESP32 → OLED (I2C SDA/SCL) -->
+        <path d="M470,204 L530,204 L530,110 L580,110" 
+          fill="none" stroke="#00aaff" stroke-width="1.8" 
+          class="data-flow" marker-end="url(#arrow-cyan)" opacity="0.85"/>
+        <text x="510" y="200" fill="#00aaff" font-size="8">I2C</text>
+
+        <!-- Power → ESP32 -->
+        <path d="M118,195 L200,195 L200,195 L310,195" 
+          fill="none" stroke="#ffaa00" stroke-width="1.5" 
+          stroke-dasharray="4 3" opacity="0.6" marker-end="url(#arrow-orange)"/>
+        <text x="210" y="190" fill="#ffaa00" font-size="8">5V</text>
+
+        <!-- ESP32 → Serial -->
+        <path d="M390,290 L390,325" 
+          fill="none" stroke="#4a8080" stroke-width="1.2" 
+          class="data-flow-slow" opacity="0.6" marker-end="url(#arrow-green)"/>
+        <text x="400" y="313" fill="#4a6080" font-size="7.5">UART</text>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- LEGEND -->
+        <!-- ══════════════════════════════════════════ -->
+        <g transform="translate(28, 330)">
+          <text x="0" y="12" fill="#4a6080" font-size="8" letter-spacing="1">LEGEND</text>
+          <!-- lines -->
+          <line x1="0" y1="24" x2="24" y2="24" stroke="#aa66ff" stroke-width="2" stroke-dasharray="4 2"/>
+          <text x="28" y="28" fill="#4a6080" font-size="8">Analog Signal</text>
+          <line x1="0" y1="40" x2="24" y2="40" stroke="#00aaff" stroke-width="2" stroke-dasharray="4 2"/>
+          <text x="28" y="44" fill="#4a6080" font-size="8">I2C Data</text>
+          <line x1="0" y1="56" x2="24" y2="56" stroke="#ff4466" stroke-width="2" stroke-dasharray="4 2"/>
+          <text x="28" y="60" fill="#4a6080" font-size="8">Digital Control</text>
+          <line x1="0" y1="72" x2="24" y2="72" stroke="#ffaa00" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <text x="28" y="76" fill="#4a6080" font-size="8">Power</text>
+        </g>
+
+        <!-- Scan line effect -->
+        <rect x="10" y="10" width="780" height="400" rx="3" fill="url(#scanlines)" opacity="0.03" pointer-events="none"/>
+      </svg>
+    </div>
+
+    <div class="specs">
+      <div class="spec-card">
+        <div class="dot"></div>
+        <div class="label">Microcontroller</div>
+        <div class="value">ESP32 (Xtensa LX6)</div>
+      </div>
+      <div class="spec-card">
+        <div class="label">Gas Sensor</div>
+        <div class="value">MQ-2 → GPIO34 (ADC)</div>
+      </div>
+      <div class="spec-card">
+        <div class="label">Display</div>
+        <div class="value">SSD1306 OLED (I2C)</div>
+      </div>
+      <div class="spec-card">
+        <div class="label">Actuator</div>
+        <div class="value">5V Relay → GPIO26</div>
+      </div>
+      <div class="spec-card">
+        <div class="label">Threshold</div>
+        <div class="value">70% → Relay ON</div>
+      </div>
+      <div class="spec-card">
+        <div class="label">Baud Rate</div>
+        <div class="value">115200 (Serial Log)</div>
+      </div>
+    </div>
+
+    <div class="logic">
+      <div class="logic-title">▶ System Logic Flow</div>
+      <div class="flow-steps">
+        <div class="step">MQ2 reads gas</div>
+        <div class="arrow">→</div>
+        <div class="step">ADC 0–4095</div>
+        <div class="arrow">→</div>
+        <div class="step">Map to %</div>
+        <div class="arrow">→</div>
+        <div class="step warn">Compare to 70%</div>
+        <div class="arrow">→</div>
+        <div class="step">Display on OLED</div>
+        <div class="arrow">→</div>
+        <div class="step danger">Relay ON if &gt;70%</div>
+        <div class="arrow">→</div>
+        <div class="step">Log to Serial</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>HUZAIFA · YDCT FINAL PROJECT · ESP32 POLLUTION MONITOR</span>
+    <span class="badge">WOKWI SIMULATION</span>
+    <span>DEC 2025</span>
+  </div>
+
+</div>
+</body>
+</html>
